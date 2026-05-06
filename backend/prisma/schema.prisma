@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  operatorReports  Report[]   @relation("OperatorReports")
+  conductorReports Report[]   @relation("ConductorReports")
+  audits           AuditLog[]
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+  CONDUCTOR
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  category  String
+  sku       String   @unique
+  image     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items       InventoryItem[]
+  reportItems ReportItem[]
+}
+
+model InventoryItem {
+  id        String         @id @default(cuid())
+  productId String
+  product   Product        @relation(fields: [productId], references: [id])
+  quantity  Int
+  location  String?
+  condition ItemCondition?
+  notes     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  reportItems ReportItem[]
+}
+
+enum ItemCondition {
+  NEW
+  GOOD
+  FAIR
+  DAMAGED
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  status      ReportStatus @default(DRAFT)
+  operatorId  String
+  operator    User         @relation("OperatorReports", fields: [operatorId], references: [id])
+  conductorId String?
+  conductor   User?        @relation("ConductorReports", fields: [conductorId], references: [id])
+  bitacora    String?
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  items  ReportItem[]
+  photos Photo[]
+  audits AuditLog[]
+}
+
+enum ReportStatus {
+  DRAFT
+  SYNCED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+model ReportItem {
+  id              String         @id @default(cuid())
+  reportId        String
+  report          Report         @relation(fields: [reportId], references: [id])
+  productId       String
+  product         Product        @relation(fields: [productId], references: [id])
+  quantity        Int
+  createdAt       DateTime       @default(now())
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  inventoryItemId String?
+}
+
+model Photo {
+  id        String    @id @default(cuid())
+  reportId  String
+  report    Report    @relation(fields: [reportId], references: [id])
+  url       String
+  type      PhotoType
+  createdAt DateTime  @default(now())
+}
+
+enum PhotoType {
+  EVIDENCE
+  INVENTORY
+  OTHER
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  reportId   String?
+  report     Report?  @relation(fields: [reportId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+  timestamp  DateTime @default(now())
+}
