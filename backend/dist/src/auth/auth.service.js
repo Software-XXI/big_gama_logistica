@@ -45,19 +45,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
-const prisma_service_1 = require("../prisma.service");
+const user_repository_1 = require("../common/providers/repositories/user.repository");
 const bcrypt = __importStar(require("bcrypt"));
 let AuthService = class AuthService {
-    prisma;
+    userRepo;
     jwtService;
-    constructor(prisma, jwtService) {
-        this.prisma = prisma;
+    constructor(userRepo, jwtService) {
+        this.userRepo = userRepo;
         this.jwtService = jwtService;
     }
     async login(dto) {
-        const user = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-        });
+        const user = await this.userRepo.findByEmail(dto.email);
         if (!user || !user.isActive) {
             throw new common_1.UnauthorizedException('Credenciales inválidas');
         }
@@ -78,21 +76,16 @@ let AuthService = class AuthService {
         };
     }
     async register(dto) {
-        const existing = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-        });
+        const existing = await this.userRepo.findByEmail(dto.email);
         if (existing) {
             throw new common_1.ConflictException('Email ya registrado');
         }
-        const hashedPassword = await bcrypt.hash(dto.password, 10);
-        const user = await this.prisma.user.create({
-            data: {
-                email: dto.email,
-                password: hashedPassword,
-                name: dto.name,
-                role: dto.role,
-                isActive: true,
-            },
+        const user = await this.userRepo.create({
+            email: dto.email,
+            password: dto.password,
+            name: dto.name,
+            role: dto.role,
+            isActive: true,
         });
         const payload = { sub: user.id, email: user.email, role: user.role };
         const accessToken = this.jwtService.sign(payload);
@@ -107,26 +100,20 @@ let AuthService = class AuthService {
         };
     }
     async validateUser(userId) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, email: true, name: true, role: true, isActive: true },
-        });
+        const user = await this.userRepo.findById(userId);
         if (!user || !user.isActive) {
             throw new common_1.UnauthorizedException();
         }
         return user;
     }
     async getProfile(userId) {
-        return this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, email: true, name: true, role: true },
-        });
+        return this.userRepo.findById(userId);
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+    __metadata("design:paramtypes", [user_repository_1.UserRepository,
         jwt_1.JwtService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

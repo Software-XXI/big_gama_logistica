@@ -21,8 +21,10 @@ export async function syncPendingData(): Promise<SyncResult> {
   for (const item of queue) {
     if (item.status === 'SYNCING') continue;
     
+    const retryCount = item.retryCount ?? 0;
+    
     try {
-      if (item.retryCount >= 3) {
+      if (retryCount >= 3) {
         console.warn(`Item ${item.id} exceeded max retries, skipping`);
         continue;
       }
@@ -37,7 +39,7 @@ export async function syncPendingData(): Promise<SyncResult> {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error(`Sync error for ${item.id}:`, errorMsg);
       errors.push(`${item.type}: ${errorMsg}`);
-      await updateSyncQueueItem(item.id, 'FAILED', item.retryCount + 1);
+      await updateSyncQueueItem(item.id, 'FAILED', retryCount + 1);
     }
   }
 

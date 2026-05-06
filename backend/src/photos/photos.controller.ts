@@ -1,8 +1,10 @@
-import { Controller, Post, Get, Delete, Param, Body, UseInterceptors, UploadedFile, Bind } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Body, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PhotosService } from './photos.service';
+import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 
 @Controller('photos')
+@UseGuards(JwtAuthGuard)
 export class PhotosController {
   constructor(private readonly photosService: PhotosService) {}
 

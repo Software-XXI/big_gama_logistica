@@ -15,7 +15,9 @@ const class_transformer_1 = require("class-transformer");
 const client_1 = require("@prisma/client");
 class CreateReportDto {
     code;
+    title;
     operatorId;
+    companionId;
     conductorId;
     bitacora;
     latitude;
@@ -29,9 +31,20 @@ __decorate([
     __metadata("design:type", String)
 ], CreateReportDto.prototype, "code", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(200),
+    __metadata("design:type", String)
+], CreateReportDto.prototype, "title", void 0);
+__decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateReportDto.prototype, "operatorId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateReportDto.prototype, "companionId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -94,7 +107,9 @@ __decorate([
     __metadata("design:type", String)
 ], PhotoDto.prototype, "type", void 0);
 class UpdateReportDto {
+    title;
     operatorId;
+    companionId;
     status;
     bitacora;
     latitude;
@@ -104,8 +119,19 @@ exports.UpdateReportDto = UpdateReportDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(200),
+    __metadata("design:type", String)
+], UpdateReportDto.prototype, "title", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateReportDto.prototype, "operatorId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateReportDto.prototype, "companionId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(['DRAFT', 'SYNCED', 'PROCESSING', 'COMPLETED', 'REJECTED']),

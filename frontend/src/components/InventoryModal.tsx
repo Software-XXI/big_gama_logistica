@@ -3,9 +3,15 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Product } from '@/types';
 
+interface ProductWithStock extends Product {
+  quantity?: number;
+  location?: string;
+  minStock?: number;
+}
+
 interface Props {
-  item?: Product | null;
-  onSave: (data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  item?: ProductWithStock | null;
+  onSave: (data: Omit<ProductWithStock, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onClose: () => void;
 }
 
@@ -39,6 +45,9 @@ export function InventoryModal({ item, onSave, onClose }: Props) {
   const [category, setCategory] = useState(item?.category || '');
   const [sku, setSku] = useState(item?.sku || '');
   const [image, setImage] = useState(item?.image || '');
+  const [quantity, setQuantity] = useState(item?.quantity?.toString() || '0');
+  const [location, setLocation] = useState(item?.location || '');
+  const [minStock, setMinStock] = useState(item?.minStock?.toString() || '10');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -117,6 +126,9 @@ export function InventoryModal({ item, onSave, onClose }: Props) {
       sku: sku.trim(),
       image,
       isActive: true,
+      quantity: parseInt(quantity) || 0,
+      location: location.trim(),
+      minStock: parseInt(minStock) || 10,
     });
   }
 
@@ -227,6 +239,42 @@ export function InventoryModal({ item, onSave, onClose }: Props) {
               value={sku}
               onChange={e => setSku(e.target.value)}
               placeholder="Código del producto"
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-3)' }}>
+            <div className="input-group">
+              <label>Cantidad</label>
+              <input
+                type="number"
+                className="input"
+                value={quantity}
+                onChange={e => setQuantity(e.target.value)}
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div className="input-group">
+              <label>Stock mínimo</label>
+              <input
+                type="number"
+                className="input"
+                value={minStock}
+                onChange={e => setMinStock(e.target.value)}
+                placeholder="10"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label>Ubicación (Rack)</label>
+            <input
+              type="text"
+              className="input"
+              value={location}
+              onChange={e => setLocation(e.target.value)}
+              placeholder="Ej: A-12-04"
             />
           </div>
 

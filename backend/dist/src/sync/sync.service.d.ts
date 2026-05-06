@@ -1,9 +1,11 @@
-import { PrismaService } from "../prisma.service";
+import { ReportRepository } from "../common/providers/repositories/report.repository";
+import { PhotoRepository } from "../common/providers/repositories/photo.repository";
 import { SyncReportDto, SyncResponseDto } from './dto/sync.dto';
 export declare class SyncService {
-    private prisma;
+    private reportsRepo;
+    private photosRepo;
     private readonly logger;
-    constructor(prisma: PrismaService);
+    constructor(reportsRepo: ReportRepository, photosRepo: PhotoRepository);
     syncReports(reports: SyncReportDto[]): Promise<SyncResponseDto>;
     getPendingCount(): Promise<number>;
 }

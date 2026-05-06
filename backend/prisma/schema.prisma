@@ -17,9 +17,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  operatorReports  Report[]   @relation("OperatorReports")
-  conductorReports Report[]   @relation("ConductorReports")
-  audits           AuditLog[]
+  operatorReports   Report[]   @relation("OperatorReports")
+  companionReports  Report[]   @relation("CompanionReports")
+  conductorReports  Report[]   @relation("ConductorReports")
+  audits            AuditLog[]
 }
 
 enum UserRole {
@@ -66,9 +67,12 @@ enum ItemCondition {
 model Report {
   id          String       @id @default(cuid())
   code        String       @unique
+  title       String?
   status      ReportStatus @default(DRAFT)
   operatorId  String
   operator    User         @relation("OperatorReports", fields: [operatorId], references: [id])
+  companionId String?
+  companion   User?        @relation("CompanionReports", fields: [companionId], references: [id])
   conductorId String?
   conductor   User?        @relation("ConductorReports", fields: [conductorId], references: [id])
   bitacora    String?

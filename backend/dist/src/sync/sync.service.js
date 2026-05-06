@@ -12,90 +12,61 @@ var SyncService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SyncService = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma.service");
+const report_repository_1 = require("../common/providers/repositories/report.repository");
+const photo_repository_1 = require("../common/providers/repositories/photo.repository");
+const DEFAULT_PHOTO_TYPE = 'EVIDENCE';
 let SyncService = SyncService_1 = class SyncService {
-    prisma;
+    reportsRepo;
+    photosRepo;
     logger = new common_1.Logger(SyncService_1.name);
-    constructor(prisma) {
-        this.prisma = prisma;
+    constructor(reportsRepo, photosRepo) {
+        this.reportsRepo = reportsRepo;
+        this.photosRepo = photosRepo;
     }
     async syncReports(reports) {
         const errors = [];
         let synced = 0;
         for (const report of reports) {
             try {
-                const existing = await this.prisma.report.findUnique({
-                    where: { code: report.code },
-                });
+                const existing = await this.reportsRepo.findByCode(report.code);
                 if (existing) {
-                    await this.prisma.report.update({
-                        where: { id: existing.id },
-                        data: {
-                            bitacora: report.bitacora,
-                            latitude: report.latitude,
-                            longitude: report.longitude,
-                            status: 'SYNCED',
-                        },
-                    });
+                    const updateDto = {
+                        title: report.title,
+                        companionId: report.companionId,
+                        bitacora: report.bitacora,
+                        latitude: report.latitude,
+                        longitude: report.longitude,
+                        status: 'SYNCED',
+                        items: report.items,
+                    };
+                    await this.reportsRepo.syncUpdate(report.code, updateDto);
                     if (report.items?.length) {
-                        await this.prisma.reportItem.deleteMany({
-                            where: { reportId: existing.id },
-                        });
-                        await this.prisma.reportItem.createMany({
-                            data: report.items.map((item) => ({
-                                reportId: existing.id,
-                                productId: item.productId,
-                                quantity: item.quantity,
-                            })),
-                        });
+                        await this.reportsRepo.replaceItems(existing.id, report.items);
                     }
                     if (report.photos?.length) {
                         for (const photo of report.photos) {
-                            await this.prisma.photo.upsert({
-                                where: { id: photo.id },
-                                create: {
-                                    id: photo.id,
-                                    reportId: existing.id,
-                                    url: photo.url,
-                                    type: photo.type || 'EVIDENCE',
-                                },
-                                update: {
-                                    url: photo.url,
-                                },
+                            await this.photosRepo.upsert(photo.id, {
+                                reportId: existing.id,
+                                url: photo.url,
+                                type: photo.type || DEFAULT_PHOTO_TYPE,
                             });
                         }
                     }
                 }
                 else {
-                    await this.prisma.report.create({
-                        data: {
-                            id: report.id,
-                            code: report.code,
-                            operatorId: report.operatorId,
-                            conductorId: report.conductorId,
-                            bitacora: report.bitacora,
-                            latitude: report.latitude,
-                            longitude: report.longitude,
-                            status: 'SYNCED',
-                            items: report.items
-                                ? {
-                                    create: report.items.map((item) => ({
-                                        productId: item.productId,
-                                        quantity: item.quantity,
-                                    })),
-                                }
-                                : undefined,
-                            photos: report.photos
-                                ? {
-                                    create: report.photos.map((photo) => ({
-                                        id: photo.id,
-                                        url: photo.url,
-                                        type: photo.type || 'EVIDENCE',
-                                    })),
-                                }
-                                : undefined,
-                        },
-                    });
+                    const createDto = {
+                        code: report.code,
+                        title: report.title,
+                        operatorId: report.operatorId,
+                        companionId: report.companionId,
+                        conductorId: report.conductorId,
+                        bitacora: report.bitacora,
+                        latitude: report.latitude,
+                        longitude: report.longitude,
+                        items: report.items,
+                        photos: report.photos?.map((p) => ({ url: p.url, type: p.type || DEFAULT_PHOTO_TYPE })),
+                    };
+                    await this.reportsRepo.create(createDto);
                 }
                 synced++;
             }
@@ -113,15 +84,16 @@ let SyncService = SyncService_1 = class SyncService {
     }
     async getPendingCount() {
         const [draftCount, syncedCount] = await Promise.all([
-            this.prisma.report.count({ where: { status: 'DRAFT' } }),
-            this.prisma.report.count({ where: { status: 'SYNCED' } }),
+            this.reportsRepo.findAll('DRAFT'),
+            this.reportsRepo.findAll('SYNCED'),
         ]);
-        return draftCount + syncedCount;
+        return (draftCount?.length || 0) + (syncedCount?.length || 0);
     }
 };
 exports.SyncService = SyncService;
 exports.SyncService = SyncService = SyncService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [report_repository_1.ReportRepository,
+        photo_repository_1.PhotoRepository])
 ], SyncService);
 //# sourceMappingURL=sync.service.js.map

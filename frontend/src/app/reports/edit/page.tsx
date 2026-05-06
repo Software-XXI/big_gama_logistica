@@ -6,27 +6,61 @@ import { ProductSelector } from '@/components/ProductSelector';
 import { Camera } from '@/components/Camera';
 import { BitacoraEditor } from '@/components/BitacoraEditor';
 import { getReport, getPhotos, addPhoto, updateReport, updateReportItemsAndPhotos } from '@/repo/reports';
-import type { PhotoType, ReportItem } from '@/types';
+import { getOperatorsCached } from '@/repo/operators';
+import type { PhotoType, Operator, Report } from '@/types';
+import { useAuth } from '@/lib/auth-context';
+
+interface ReportWithFields extends Report {
+  companionId?: string;
+  companionName?: string;
+  conductorName?: string;
+}
 
 export default function EditReportPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const id = searchParams.get('id');
+  
+  const [title, setTitle] = useState('');
   const [items, setItems] = useState<{ productId: string; productName: string; quantity: number }[]>([]);
-  const [bitacora, setBitacora] = useState('');
   const [initialItems, setInitialItems] = useState<{ productId: string; productName: string; quantity: number }[]>([]);
+  const [bitacora, setBitacora] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [initialPhotos, setInitialPhotos] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  
+  const [operators, setOperators] = useState<Operator[]>([]);
+  const [companionId, setCompanionId] = useState<string>('');
+  const [companionName, setCompanionName] = useState<string>('');
+  const [conductorName, setConductorName] = useState('');
+  const [isLoadingOperators, setIsLoadingOperators] = useState(true);
+
+  useEffect(() => {
+    async function loadOperators() {
+      const ops = await getOperatorsCached();
+      const otherOperators = ops.filter(op => op.id !== user?.id);
+      setOperators(otherOperators);
+      setIsLoadingOperators(false);
+    }
+    if (user) {
+      loadOperators();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (id) loadReport(id);
   }, [id]);
 
   async function loadReport(reportId: string) {
-    const report = await getReport(reportId);
+    const report = await getReport(reportId) as ReportWithFields | null;
     if (report) {
+      setTitle(report.title || '');
       setBitacora(report.bitacora || '');
+      setCompanionId(report.companionId || '');
+      setCompanionName(report.companionName || '');
+      setConductorName(report.conductorName || '');
+      
       const mappedItems = (report.items || []).map(item => ({
         productId: item.productId,
         productName: item.productName || '',
@@ -34,6 +68,7 @@ export default function EditReportPage() {
       }));
       setItems(mappedItems);
       setInitialItems(mappedItems);
+      
       const photosData = await getPhotos(reportId);
       const mappedPhotos = photosData.map(p => p.data);
       setPhotos(mappedPhotos);
@@ -46,23 +81,30 @@ export default function EditReportPage() {
     setIsSaving(true);
 
     try {
-      // 1. Update the basic report info (bitacora and any other top-level fields)
-      await updateReport(id, { bitacora });
+      await updateReport(id, { 
+        bitacora,
+        title: title || undefined,
+        companionId: companionId || undefined,
+        companionName: companionName || undefined,
+        conductorName: conductorName || undefined,
+      });
 
-      // 2. Update items and photos completely (replace all)
       await updateReportItemsAndPhotos(id, items, photos);
 
       router.push(`/reports/details?id=${id}`);
     } catch (error) {
       console.error('Error saving report:', error);
-      // Show error to user in a real app
       alert('Error al guardar el reporte. Por favor intente nuevamente.');
     } finally {
       setIsSaving(false);
     }
   }
 
-
+  function handleCompanionChange(newCompanionId: string) {
+    setCompanionId(newCompanionId);
+    const selectedOp = operators.find(op => op.id === newCompanionId);
+    setCompanionName(selectedOp?.name || '');
+  }
 
   function handlePhotoCapture(photo: string, _type: PhotoType) {
     setPhotos(prev => [...prev, photo]);
@@ -74,12 +116,131 @@ export default function EditReportPage() {
 
   return (
     <main className="container">
-      <header style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button onClick={() => router.back()} style={{ fontSize: 24 }}>←</button>
-        <h1 style={{ fontSize: 20, fontWeight: 600 }}>Editar Reporte</h1>
+      <header className="page-header">
+        <button 
+          className="back-button"
+          onClick={() => router.back()}
+        >
+          <span className="back-icon">←</span>
+          <span className="back-text">Volver</span>
+        </button>
+        <h1 className="page-title">Editar Reporte</h1>
       </header>
 
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">
+          <h3 className="card-title">Información del Reporte</h3>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Título del reporte
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ej: Entrega Zona Norte - Lunes"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">
+          <h3 className="card-title">Equipo de Trabajo</h3>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Operador principal
+            </label>
+            <input
+              type="text"
+              value={user?.name || 'Cargando...'}
+              disabled
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--muted)',
+                color: 'var(--foreground-light)',
+              }}
+            />
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Operador acompañante (opcional)
+            </label>
+            {isLoadingOperators ? (
+              <input
+                type="text"
+                disabled
+                placeholder="Cargando operadores..."
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              />
+            ) : (
+              <select
+                value={companionId}
+                onChange={(e) => handleCompanionChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--background)',
+                  color: 'var(--foreground)',
+                }}
+              >
+                <option value="">Sin acompañante</option>
+                {operators.map(op => (
+                  <option key={op.id} value={op.id}>{op.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Conductor (opcional)
+            </label>
+            <input
+              type="text"
+              value={conductorName}
+              onChange={(e) => setConductorName(e.target.value)}
+              placeholder="Nombre del conductor"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
       <ProductSelector onSelect={setItems} initialItems={items} />
 

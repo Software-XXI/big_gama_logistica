@@ -11,12 +11,14 @@ const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const photos_controller_1 = require("./photos.controller");
 const photos_service_1 = require("./photos.service");
+const repositories_module_1 = require("../common/providers/repositories.module");
 let PhotosModule = class PhotosModule {
 };
 exports.PhotosModule = PhotosModule;
 exports.PhotosModule = PhotosModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            repositories_module_1.RepositoriesModule,
             platform_express_1.MulterModule.register({
                 limits: { fileSize: 10 * 1024 * 1024 },
                 fileFilter: (_, file, cb) => {

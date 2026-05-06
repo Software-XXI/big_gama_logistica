@@ -23,6 +23,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
 class RegisterDto {
@@ -38,7 +39,11 @@ __decorate([
 ], RegisterDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.MinLength)(8),
+    (0, class_validator_1.MaxLength)(100),
+    (0, class_validator_1.Matches)(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+        message: 'Password debe contener al menos una mayúscula, una minúscula y un número',
+    }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 __decorate([

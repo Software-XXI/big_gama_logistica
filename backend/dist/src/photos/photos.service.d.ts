@@ -1,27 +1,28 @@
-import { PrismaService } from "../prisma.service";
+import { PhotoRepository } from "../common/providers/repositories/photo.repository";
 export declare class PhotosService {
-    private prisma;
+    private photosRepo;
     private uploadPath;
-    constructor(prisma: PrismaService);
+    constructor(photosRepo: PhotoRepository);
+    private sanitizeFilename;
     upload(file: Express.Multer.File, reportId: string, type: string): Promise<{
-        url: string;
-        type: import(".prisma/client").$Enums.PhotoType;
         id: string;
         createdAt: Date;
         reportId: string;
+        url: string;
+        type: import(".prisma/client").$Enums.PhotoType;
     }>;
     findByReport(reportId: string): Promise<{
-        url: string;
-        type: import(".prisma/client").$Enums.PhotoType;
         id: string;
         createdAt: Date;
         reportId: string;
+        url: string;
+        type: import(".prisma/client").$Enums.PhotoType;
     }[]>;
     delete(id: string): Promise<{
-        url: string;
-        type: import(".prisma/client").$Enums.PhotoType;
         id: string;
         createdAt: Date;
         reportId: string;
+        url: string;
+        type: import(".prisma/client").$Enums.PhotoType;
     }>;
 }

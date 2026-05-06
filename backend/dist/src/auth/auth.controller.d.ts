@@ -7,8 +7,9 @@ export declare class AuthController {
     register(dto: RegisterDto): Promise<import("./dto/auth.dto").AuthResponseDto>;
     getProfile(req: any): Promise<{
         id: string;
-        name: string;
         email: string;
-        role: import(".prisma/client").$Enums.UserRole;
+        name: string;
+        role: string;
+        isActive: boolean;
     } | null>;
 }

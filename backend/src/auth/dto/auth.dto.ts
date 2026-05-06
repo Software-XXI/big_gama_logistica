@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -6,6 +6,7 @@ export class LoginDto {
 
   @IsString()
   @MinLength(6)
+  @MaxLength(100)
   password: string;
 }
 
@@ -14,7 +15,11 @@ export class RegisterDto {
   email: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
+  @MaxLength(100)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message: 'Password debe contener al menos una mayúscula, una minúscula y un número',
+  })
   password: string;
 
   @IsString()

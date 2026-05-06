@@ -1,36 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@/prisma.service';
+import { ProductRepository } from '@/common/providers/repositories/product.repository';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private productsRepo: ProductRepository) {}
 
   async create(dto: CreateProductDto) {
-    return this.prisma.product.create({
-      data: dto,
-    });
+    return this.productsRepo.create(dto);
   }
 
   async createMany(products: CreateProductDto[]) {
-    return this.prisma.product.createMany({
-      data: products,
-      skipDuplicates: true,
-    });
+    return this.productsRepo.createMany(products);
   }
 
   async findAll(activeOnly = true) {
-    return this.prisma.product.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
-      orderBy: { name: 'asc' },
-    });
+    return this.productsRepo.findAll(activeOnly);
   }
 
   async findOne(id: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-      include: { items: true },
-    });
+    const product = await this.productsRepo.findOne(id);
 
     if (!product) {
       throw new NotFoundException(`Producto ${id} no encontrado`);
@@ -40,22 +29,14 @@ export class ProductsService {
   }
 
   async findBySku(sku: string) {
-    return this.prisma.product.findUnique({
-      where: { sku },
-    });
+    return this.productsRepo.findBySku(sku);
   }
 
   async update(id: string, dto: UpdateProductDto) {
-    return this.prisma.product.update({
-      where: { id },
-      data: dto,
-    });
+    return this.productsRepo.update(id, dto);
   }
 
   async deactivate(id: string) {
-    return this.prisma.product.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    return this.productsRepo.deactivate(id);
   }
 }

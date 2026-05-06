@@ -53,17 +53,37 @@ export default function ReportDetailsPage() {
 
   return (
     <main className="container">
-      <header style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button onClick={() => router.back()} style={{ fontSize: 24 }}>←</button>
-        <h1 style={{ fontSize: 20, fontWeight: 600 }}>{report.code}</h1>
+      <header className="page-header">
+        <button 
+          className="back-button"
+          onClick={() => router.push('/reports')}
+        >
+          <span className="back-icon">←</span>
+          <span className="back-text">Volver</span>
+        </button>
+        <h1 className="page-title">{report.code}</h1>
       </header>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {report.title && (
+          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>
+            {report.title}
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <span>Estado</span>
           <span className={`status-badge status-${report.status.toLowerCase()}`}>{report.status}</span>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--foreground-light)', marginTop: 8 }}>
+        <div style={{ marginTop: 12, fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div>👤 <strong>Operador:</strong> {report.operatorName || report.operatorId}</div>
+          {report.companionName && (
+            <div>+ 👤 <strong>Acompañante:</strong> {report.companionName}</div>
+          )}
+          {report.conductorName && (
+            <div>🚛 <strong>Conductor:</strong> {report.conductorName}</div>
+          )}
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--foreground-light)', marginTop: 12 }}>
           Creado: {new Date(report.createdAt).toLocaleString('es-CO')}
         </p>
       </div>

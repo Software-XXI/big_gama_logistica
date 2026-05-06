@@ -1,12 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@/prisma.service';
+import { ReportRepository } from '@/common/providers/repositories/report.repository';
+import type { CreateReportDto, SyncUpdateReportDto } from '@/common/interfaces/repositories/i-report.repository';
+import { PhotoRepository } from '@/common/providers/repositories/photo.repository';
+import type { PhotoType } from '@prisma/client';
 import { SyncReportDto, SyncResponseDto } from './dto/sync.dto';
+
+const DEFAULT_PHOTO_TYPE: PhotoType = 'EVIDENCE';
 
 @Injectable()
 export class SyncService {
   private readonly logger = new Logger(SyncService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private reportsRepo: ReportRepository,
+    private photosRepo: PhotoRepository,
+  ) {}
 
   async syncReports(reports: SyncReportDto[]): Promise<SyncResponseDto> {
     const errors: string[] = [];
@@ -14,80 +22,47 @@ export class SyncService {
 
     for (const report of reports) {
       try {
-        const existing = await this.prisma.report.findUnique({
-          where: { code: report.code },
-        });
+        const existing = await this.reportsRepo.findByCode(report.code);
 
         if (existing) {
-          await this.prisma.report.update({
-            where: { id: existing.id },
-            data: {
-              bitacora: report.bitacora,
-              latitude: report.latitude,
-              longitude: report.longitude,
-              status: 'SYNCED',
-            },
-          });
+          const updateDto: SyncUpdateReportDto = {
+            title: report.title,
+            companionId: report.companionId,
+            bitacora: report.bitacora,
+            latitude: report.latitude,
+            longitude: report.longitude,
+            status: 'SYNCED' as any,
+            items: report.items,
+          };
+          await this.reportsRepo.syncUpdate(report.code, updateDto);
 
           if (report.items?.length) {
-            await this.prisma.reportItem.deleteMany({
-              where: { reportId: existing.id },
-            });
-            await this.prisma.reportItem.createMany({
-              data: report.items.map((item) => ({
-                reportId: existing.id,
-                productId: item.productId,
-                quantity: item.quantity,
-              })),
-            });
+            await this.reportsRepo.replaceItems(existing.id, report.items);
           }
 
           if (report.photos?.length) {
             for (const photo of report.photos) {
-              await this.prisma.photo.upsert({
-                where: { id: photo.id },
-                create: {
-                  id: photo.id,
-                  reportId: existing.id,
-                  url: photo.url,
-                  type: (photo.type as any) || 'EVIDENCE',
-                },
-                update: {
-                  url: photo.url,
-                },
+              await this.photosRepo.upsert(photo.id, {
+                reportId: existing.id,
+                url: photo.url,
+                type: (photo.type as PhotoType) || DEFAULT_PHOTO_TYPE,
               });
             }
           }
         } else {
-          await this.prisma.report.create({
-            data: {
-              id: report.id,
-              code: report.code,
-              operatorId: report.operatorId,
-              conductorId: report.conductorId,
-              bitacora: report.bitacora,
-              latitude: report.latitude,
-              longitude: report.longitude,
-              status: 'SYNCED',
-              items: report.items
-                ? {
-                    create: report.items.map((item) => ({
-                      productId: item.productId,
-                      quantity: item.quantity,
-                    })),
-                  }
-                : undefined,
-              photos: report.photos
-                ? {
-                    create: report.photos.map((photo) => ({
-                      id: photo.id,
-                      url: photo.url,
-                      type: (photo.type as any) || 'EVIDENCE',
-                    })),
-                  }
-                : undefined,
-            },
-          });
+          const createDto: CreateReportDto = {
+            code: report.code,
+            title: report.title,
+            operatorId: report.operatorId,
+            companionId: report.companionId,
+            conductorId: report.conductorId,
+            bitacora: report.bitacora,
+            latitude: report.latitude,
+            longitude: report.longitude,
+            items: report.items,
+            photos: report.photos?.map((p) => ({ url: p.url, type: (p.type as PhotoType) || DEFAULT_PHOTO_TYPE })),
+          };
+          await this.reportsRepo.create(createDto);
         }
 
         synced++;
@@ -107,9 +82,9 @@ export class SyncService {
 
   async getPendingCount(): Promise<number> {
     const [draftCount, syncedCount] = await Promise.all([
-      this.prisma.report.count({ where: { status: 'DRAFT' } }),
-      this.prisma.report.count({ where: { status: 'SYNCED' } }),
+      this.reportsRepo.findAll('DRAFT' as any),
+      this.reportsRepo.findAll('SYNCED' as any),
     ]);
-    return draftCount + syncedCount;
+    return (draftCount?.length || 0) + (syncedCount?.length || 0);
   }
 }

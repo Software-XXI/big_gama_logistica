@@ -1,21 +1,18 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '@/prisma.service';
+import { UserRepository } from '@/common/providers/repositories/user.repository';
 import { LoginDto, RegisterDto, AuthResponseDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
+    private userRepo: UserRepository,
     private jwtService: JwtService,
   ) {}
 
   async login(dto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    }) as Prisma.UserGetPayload<{}> & { password: string };
+    const user = await this.userRepo.findByEmail(dto.email);
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -41,25 +38,19 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
+    const existing = await this.userRepo.findByEmail(dto.email);
 
     if (existing) {
       throw new ConflictException('Email ya registrado');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        name: dto.name,
-        role: dto.role,
-        isActive: true,
-      },
-    }) as Prisma.UserGetPayload<{}> & { password: string };
+    const user = await this.userRepo.create({
+      email: dto.email,
+      password: dto.password,
+      name: dto.name,
+      role: dto.role,
+      isActive: true,
+    });
 
     const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = this.jwtService.sign(payload);
@@ -76,10 +67,7 @@ export class AuthService {
   }
 
   async validateUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, name: true, role: true, isActive: true },
-    });
+    const user = await this.userRepo.findById(userId);
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException();
@@ -89,9 +77,6 @@ export class AuthService {
   }
 
   async getProfile(userId: string) {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, name: true, role: true },
-    });
+    return this.userRepo.findById(userId);
   }
 }

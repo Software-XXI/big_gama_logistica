@@ -8,18 +8,24 @@ import {
   getAllInventoryItems, 
   addInventoryItem, 
   updateInventoryItem, 
-  deleteInventoryItem 
+  deleteInventoryItem,
+  getInventoryStats
 } from '@/repo/inventory';
 import { clearFailedSyncItems } from '@/lib/db';
 import type { Product } from '@/types';
 
+interface ProductWithStock extends Product {
+  quantity?: number;
+  location?: string;
+  minStock?: number;
+}
+
 export default function InventoryPage() {
-  const [items, setItems] = useState<Product[]>([]);
+  const [items, setItems] = useState<ProductWithStock[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<Product | null>(null);
+  const [editingItem, setEditingItem] = useState<ProductWithStock | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     loadItems();
     clearFailedSyncItems();
@@ -32,7 +38,7 @@ export default function InventoryPage() {
     setIsLoading(false);
   }
 
-  async function handleSave(data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) {
+  async function handleSave(data: Omit<ProductWithStock, 'id' | 'createdAt' | 'updatedAt'>) {
     if (editingItem) {
       await updateInventoryItem(editingItem.id, data);
     } else {
@@ -50,7 +56,7 @@ export default function InventoryPage() {
     }
   }
 
-  function handleEdit(item: Product) {
+  function handleEdit(item: ProductWithStock) {
     setEditingItem(item);
     setShowModal(true);
   }
@@ -68,23 +74,24 @@ export default function InventoryPage() {
   const filteredItems = items.filter(item => 
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+    item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.location?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <main className="container">
-      <div className="inventory-header">
-        <h1 className="inventory-title">Inventario</h1>
+      <header className="page-header" style={{ justifyContent: 'space-between' }}>
+        <h1 className="page-title">Inventario</h1>
         <button className="btn btn-primary" onClick={handleAddNew}>
           + Añadir
         </button>
-      </div>
+      </header>
 
       <div className="search-bar">
         <span className="search-icon">🔍</span>
         <input
           type="text"
-          placeholder="Buscar items..."
+          placeholder="Buscar por nombre, categoría, SKU o ubicación..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />

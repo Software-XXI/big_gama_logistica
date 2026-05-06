@@ -16,6 +16,7 @@ exports.PhotosController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const photos_service_1 = require("./photos.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let PhotosController = class PhotosController {
     photosService;
     constructor(photosService) {
@@ -58,6 +59,7 @@ __decorate([
 ], PhotosController.prototype, "delete", null);
 exports.PhotosController = PhotosController = __decorate([
     (0, common_1.Controller)('photos'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [photos_service_1.PhotosService])
 ], PhotosController);
 //# sourceMappingURL=photos.controller.js.map

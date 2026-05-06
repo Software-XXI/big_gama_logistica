@@ -1,45 +1,56 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@/prisma.service';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PhotoRepository } from '@/common/providers/repositories/photo.repository';
+import type { PhotoType } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+
+const VALID_PHOTO_TYPES: PhotoType[] = ['EVIDENCE', 'INVENTORY', 'OTHER'];
 
 @Injectable()
 export class PhotosService {
   private uploadPath = './uploads/photos';
 
-  constructor(private prisma: PrismaService) {
+  constructor(private photosRepo: PhotoRepository) {
     if (!fs.existsSync(this.uploadPath)) {
       fs.mkdirSync(this.uploadPath, { recursive: true });
     }
   }
 
+  private sanitizeFilename(filename: string): string {
+    const sanitized = filename.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const ext = path.extname(sanitized).toLowerCase();
+    const baseName = path.basename(sanitized, ext);
+    return `${baseName.substring(0, 50)}${ext}`;
+  }
+
   async upload(file: Express.Multer.File, reportId: string, type: string) {
-    const filename = `${Date.now()}-${file.originalname}`;
+    const sanitizedName = this.sanitizeFilename(file.originalname);
+    const filename = `${Date.now()}-${sanitizedName}`;
     const filepath = path.join(this.uploadPath, filename);
 
     fs.writeFileSync(filepath, file.buffer);
 
     const url = `/uploads/photos/${filename}`;
 
-    return this.prisma.photo.create({
-      data: {
-        reportId,
-        url,
-        type: type as any,
-      },
+    const photoType = (type as PhotoType) || 'EVIDENCE';
+    if (!VALID_PHOTO_TYPES.includes(photoType)) {
+      throw new BadRequestException('Tipo de foto inválido. Valores permitidos: EVIDENCE, INVENTORY, OTHER');
+    }
+
+    return this.photosRepo.create({
+      reportId,
+      url,
+      type: photoType,
     });
   }
 
   async findByReport(reportId: string) {
-    return this.prisma.photo.findMany({
-      where: { reportId },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.photosRepo.findByReport(reportId);
   }
 
   async delete(id: string) {
-    const photo = await this.prisma.photo.findUnique({ where: { id } });
-    
+    const photo = await this.photosRepo.findUnique(id);
+
     if (!photo) {
       throw new NotFoundException(`Foto ${id} no encontrada`);
     }
@@ -49,6 +60,6 @@ export class PhotosService {
       fs.unlinkSync(filepath);
     }
 
-    return this.prisma.photo.delete({ where: { id } });
+    return this.photosRepo.delete(id);
   }
 }

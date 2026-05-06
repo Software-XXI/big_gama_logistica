@@ -1,7 +1,9 @@
 export declare class SyncReportDto {
     id: string;
     code: string;
+    title?: string;
     operatorId: string;
+    companionId?: string;
     conductorId?: string;
     bitacora?: string;
     latitude?: number;

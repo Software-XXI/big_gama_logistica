@@ -1,20 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProductSelector } from '@/components/ProductSelector';
 import { Camera } from '@/components/Camera';
 import { BitacoraEditor } from '@/components/BitacoraEditor';
 import { createReport, addPhoto } from '@/repo/reports';
-import type { PhotoType } from '@/types';
+import { getOperatorsCached } from '@/repo/operators';
+import type { PhotoType, Operator } from '@/types';
+import { useAuth } from '@/lib/auth-context';
 
 export default function NewReport() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [title, setTitle] = useState('');
   const [items, setItems] = useState<{ productId: string; productName: string; quantity: number }[]>([]);
   const [bitacora, setBitacora] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
+  const [operators, setOperators] = useState<Operator[]>([]);
+  const [companionId, setCompanionId] = useState<string>('');
+  const [conductorName, setConductorName] = useState('');
+  const [isLoadingOperators, setIsLoadingOperators] = useState(true);
+
+  useEffect(() => {
+    async function loadOperators() {
+      const ops = await getOperatorsCached();
+      const otherOperators = ops.filter(op => op.id !== user?.id);
+      setOperators(otherOperators);
+      setIsLoadingOperators(false);
+    }
+    if (user) {
+      loadOperators();
+    }
+  }, [user]);
 
   async function handleSaveDraft() {
     setIsSaving(true);
@@ -27,11 +47,13 @@ export default function NewReport() {
       const reportItems = items
         .filter(item => item.quantity > 0)
         .map(item => ({
+          id: crypto.randomUUID(),
           reportId: id,
           productId: item.productId,
           productName: item.productName,
           productSku: '',
           quantity: item.quantity,
+          createdAt: now,
         }));
       
       const photoIds: string[] = [];
@@ -42,8 +64,12 @@ export default function NewReport() {
       
       await createReport({
         code,
+        title: title || undefined,
         status: 'DRAFT',
-        operatorId: 'demo-operator',
+        operatorId: user?.id || 'demo-operator',
+        operatorName: user?.name,
+        companionId: companionId || undefined,
+        conductorName: conductorName || undefined,
         bitacora,
         items: reportItems,
         photoIds,
@@ -65,10 +91,131 @@ export default function NewReport() {
 
   return (
     <main className="container">
-      <header style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button onClick={() => router.back()} style={{ fontSize: 24 }}>←</button>
-        <h1 style={{ fontSize: 20, fontWeight: 600 }}>Nuevo Reporte</h1>
+      <header className="page-header">
+        <button 
+          className="back-button"
+          onClick={() => router.back()}
+        >
+          <span className="back-icon">←</span>
+          <span className="back-text">Volver</span>
+        </button>
+        <h1 className="page-title">Nuevo Reporte</h1>
       </header>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">
+          <h3 className="card-title">Información del Reporte</h3>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Título del reporte
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ej: Entrega Zona Norte - Lunes"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">
+          <h3 className="card-title">Equipo de Trabajo</h3>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Operador principal
+            </label>
+            <input
+              type="text"
+              value={user?.name || 'Cargando...'}
+              disabled
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--muted)',
+                color: 'var(--foreground-light)',
+              }}
+            />
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Operador acompañante (opcional)
+            </label>
+            {isLoadingOperators ? (
+              <input
+                type="text"
+                disabled
+                placeholder="Cargando operadores..."
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              />
+            ) : (
+              <select
+                value={companionId}
+                onChange={(e) => setCompanionId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--background)',
+                  color: 'var(--foreground)',
+                }}
+              >
+                <option value="">Sin acompañante</option>
+                {operators.map(op => (
+                  <option key={op.id} value={op.id}>{op.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+              Conductor (opcional)
+            </label>
+            <input
+              type="text"
+              value={conductorName}
+              onChange={(e) => setConductorName(e.target.value)}
+              placeholder="Nombre del conductor"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
       <ProductSelector onSelect={setItems} />
 

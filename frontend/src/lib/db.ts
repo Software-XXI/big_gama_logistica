@@ -1,11 +1,17 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Report, ReportItem, Photo, Product, SyncQueueItem, User } from '@/types';
 
+interface ProductWithStock extends Product {
+  quantity?: number;
+  location?: string;
+  minStock?: number;
+}
+
 const db = new Dexie('BigGammaLogistica') as Dexie & {
   reports: EntityTable<Report, 'id'>;
   reportItems: EntityTable<ReportItem, 'id'>;
   photos: EntityTable<Photo, 'id'>;
-  products: EntityTable<Product, 'id'>;
+  products: EntityTable<ProductWithStock, 'id'>;
   users: EntityTable<User, 'id'>;
   syncQueue: EntityTable<SyncQueueItem, 'id'>;
 };
@@ -14,7 +20,7 @@ db.version(1).stores({
   reports: 'id, code, status, operatorId, createdAt, syncedAt',
   reportItems: 'id, reportId, productId, createdAt',
   photos: 'id, reportId, type, createdAt',
-  products: 'id, name, category, sku, isActive',
+  products: 'id, name, category, sku, isActive, location',
   users: 'id, email, name, role',
   syncQueue: 'id, type, status, createdAt',
 });

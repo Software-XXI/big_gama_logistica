@@ -44,39 +44,46 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PhotosService = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma.service");
+const photo_repository_1 = require("../common/providers/repositories/photo.repository");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const VALID_PHOTO_TYPES = ['EVIDENCE', 'INVENTORY', 'OTHER'];
 let PhotosService = class PhotosService {
-    prisma;
+    photosRepo;
     uploadPath = './uploads/photos';
-    constructor(prisma) {
-        this.prisma = prisma;
+    constructor(photosRepo) {
+        this.photosRepo = photosRepo;
         if (!fs.existsSync(this.uploadPath)) {
             fs.mkdirSync(this.uploadPath, { recursive: true });
         }
     }
+    sanitizeFilename(filename) {
+        const sanitized = filename.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const ext = path.extname(sanitized).toLowerCase();
+        const baseName = path.basename(sanitized, ext);
+        return `${baseName.substring(0, 50)}${ext}`;
+    }
     async upload(file, reportId, type) {
-        const filename = `${Date.now()}-${file.originalname}`;
+        const sanitizedName = this.sanitizeFilename(file.originalname);
+        const filename = `${Date.now()}-${sanitizedName}`;
         const filepath = path.join(this.uploadPath, filename);
         fs.writeFileSync(filepath, file.buffer);
         const url = `/uploads/photos/${filename}`;
-        return this.prisma.photo.create({
-            data: {
-                reportId,
-                url,
-                type: type,
-            },
+        const photoType = type || 'EVIDENCE';
+        if (!VALID_PHOTO_TYPES.includes(photoType)) {
+            throw new common_1.BadRequestException('Tipo de foto inválido. Valores permitidos: EVIDENCE, INVENTORY, OTHER');
+        }
+        return this.photosRepo.create({
+            reportId,
+            url,
+            type: photoType,
         });
     }
     async findByReport(reportId) {
-        return this.prisma.photo.findMany({
-            where: { reportId },
-            orderBy: { createdAt: 'desc' },
-        });
+        return this.photosRepo.findByReport(reportId);
     }
     async delete(id) {
-        const photo = await this.prisma.photo.findUnique({ where: { id } });
+        const photo = await this.photosRepo.findUnique(id);
         if (!photo) {
             throw new common_1.NotFoundException(`Foto ${id} no encontrada`);
         }
@@ -84,12 +91,12 @@ let PhotosService = class PhotosService {
         if (fs.existsSync(filepath)) {
             fs.unlinkSync(filepath);
         }
-        return this.prisma.photo.delete({ where: { id } });
+        return this.photosRepo.delete(id);
     }
 };
 exports.PhotosService = PhotosService;
 exports.PhotosService = PhotosService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [photo_repository_1.PhotoRepository])
 ], PhotosService);
 //# sourceMappingURL=photos.service.js.map

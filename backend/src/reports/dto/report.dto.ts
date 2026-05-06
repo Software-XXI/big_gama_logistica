@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNumber, IsArray, ValidateNested, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReportStatus } from '@prisma/client';
 
@@ -6,8 +6,17 @@ export class CreateReportDto {
   @IsString()
   code: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
   @IsString()
   operatorId: string;
+
+  @IsOptional()
+  @IsString()
+  companionId?: string;
 
   @IsOptional()
   @IsString()
@@ -58,7 +67,16 @@ export class PhotoDto {
 export class UpdateReportDto {
   @IsOptional()
   @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
   operatorId?: string;
+
+  @IsOptional()
+  @IsString()
+  companionId?: string;
 
   @IsOptional()
   @IsEnum(['DRAFT', 'SYNCED', 'PROCESSING', 'COMPLETED', 'REJECTED'])

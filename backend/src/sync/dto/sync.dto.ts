@@ -8,8 +8,16 @@ export class SyncReportDto {
   @IsString()
   code: string;
 
+  @IsOptional()
+  @IsString()
+  title?: string;
+
   @IsString()
   operatorId: string;
+
+  @IsOptional()
+  @IsString()
+  companionId?: string;
 
   @IsOptional()
   @IsString()

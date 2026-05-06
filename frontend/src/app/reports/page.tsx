@@ -23,17 +23,17 @@ export default function ReportsPage() {
 
   return (
     <main className="container">
-      <header style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>Reportes</h1>
-
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
-          {(['all', 'DRAFT', 'SYNCED', 'COMPLETED'] as const).map(status => (
-            <button key={status} onClick={() => setFilter(status)} className={`btn ${filter === status ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '8px 16px', fontSize: 14 }}>
-              {status === 'all' ? 'Todos' : status}
-            </button>
-          ))}
-        </div>
+      <header className="page-header">
+        <h1 className="page-title">Reportes</h1>
       </header>
+
+      <div className="filter-bar">
+        {(['all', 'DRAFT', 'SYNCED', 'COMPLETED'] as const).map(status => (
+          <button key={status} onClick={() => setFilter(status)} className={`btn ${filter === status ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '8px 16px', fontSize: 14 }}>
+            {status === 'all' ? 'Todos' : status}
+          </button>
+        ))}
+      </div>
 
       {filtered.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: 48 }}>
@@ -41,13 +41,16 @@ export default function ReportsPage() {
           <Link href="/reports/new" className="btn btn-primary">Crear Reporte</Link>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="reports-list">
           {filtered.map(report => (
-            <Link key={report.id} href={`/reports/details?id=${report.id}`} className="card" style={{ display: 'block' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <Link key={report.id} href={`/reports/details?id=${report.id}`} className="card report-card">
+              <div className="report-card-header">
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 16 }}>{report.code}</div>
-                  <div style={{ fontSize: 12, color: 'var(--foreground-light)' }}>
+                  {report.title ? (
+                    <div className="report-title">{report.title}</div>
+                  ) : null}
+                  <div className="report-code">{report.code}</div>
+                  <div className="report-date">
                     {new Date(report.createdAt).toLocaleString('es-CO')}
                   </div>
                 </div>
@@ -55,12 +58,29 @@ export default function ReportsPage() {
                   {report.status}
                 </span>
               </div>
+              
+              <div className="report-meta">
+                <span className="meta-operator">
+                  👤 {report.operatorName || report.operatorId}
+                </span>
+                {report.companionName && (
+                  <span className="meta-companion">
+                    + 👤 {report.companionName}
+                  </span>
+                )}
+                {report.conductorName && (
+                  <span className="meta-conductor">
+                    🚛 {report.conductorName}
+                  </span>
+                )}
+              </div>
+              
               {report.bitacora && (
-                <p style={{ fontSize: 14, color: 'var(--foreground-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p className="report-bitacora">
                   {report.bitacora}
                 </p>
               )}
-              <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, color: 'var(--foreground-light)' }}>
+              <div className="report-stats">
                 <span>📦 {report.items?.length || 0} items</span>
                 <span>📷 {report.photoIds?.length || 0} fotos</span>
               </div>
@@ -72,11 +92,9 @@ export default function ReportsPage() {
       <Link
         href="/reports/new"
         className="fab"
-        style={{ bottom: '90px' }}
       >
         +
       </Link>
-
 
       <TabBar />
     </main>

@@ -1,170 +1,130 @@
-import { PrismaService } from "../prisma.service";
-import { CreateReportDto, UpdateReportDto } from './dto/report.dto';
-import { ReportStatus, Prisma } from '@prisma/client';
+import type { CreateReportDto, UpdateReportDto } from "../common/interfaces/repositories/i-report.repository";
+import { ReportRepository } from "../common/providers/repositories/report.repository";
+import { UserRepository } from "../common/providers/repositories/user.repository";
+import { ReportStatus } from '@prisma/client';
+export interface UserInfo {
+    id: string;
+    role: string;
+}
 export declare class ReportsService {
-    private prisma;
-    constructor(prisma: PrismaService);
+    private reportsRepo;
+    private userRepo;
+    constructor(reportsRepo: ReportRepository, userRepo: UserRepository);
     create(dto: CreateReportDto, userId: string): Promise<{
-        items: {
-            productId: string;
-            quantity: number;
-            id: string;
-            createdAt: Date;
-            inventoryItemId: string | null;
-            reportId: string;
-        }[];
-        operator: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            email: string;
-            password: string;
-            role: import(".prisma/client").$Enums.UserRole;
-            isActive: boolean;
-        };
-        conductor: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            email: string;
-            password: string;
-            role: import(".prisma/client").$Enums.UserRole;
-            isActive: boolean;
-        } | null;
-    } & {
+        id: string;
         code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
         operatorId: string;
+        companionId: string | null;
         conductorId: string | null;
         bitacora: string | null;
         latitude: number | null;
         longitude: number | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
+    } & {
+        items: import(".prisma/client").ReportItem[];
+        photos: import(".prisma/client").Photo[];
+        operator?: {
+            id: string;
+            name: string;
+        };
+        companion?: {
+            id: string;
+            name: string;
+        } | null;
+        conductor?: {
+            id: string;
+            name: string;
+        } | null;
     }>;
-    findAll(status?: ReportStatus): Promise<({
-        items: ({
-            product: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                category: string;
-                sku: string;
-                image: string | null;
-            };
-        } & {
-            productId: string;
-            quantity: number;
-            id: string;
-            createdAt: Date;
-            inventoryItemId: string | null;
-            reportId: string;
-        })[];
-        photos: {
-            url: string;
-            type: import(".prisma/client").$Enums.PhotoType;
-            id: string;
-            createdAt: Date;
-            reportId: string;
-        }[];
-        operator: {
-            id: string;
-            name: string;
-        };
-        conductor: {
-            id: string;
-            name: string;
-        } | null;
-    } & {
+    findAll(status?: ReportStatus): Promise<{
+        id: string;
         code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
         operatorId: string;
+        companionId: string | null;
         conductorId: string | null;
         bitacora: string | null;
         latitude: number | null;
         longitude: number | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
-    })[]>;
+    }[]>;
+    findAllForUser(userId: string): Promise<{
+        id: string;
+        code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
+        operatorId: string;
+        companionId: string | null;
+        conductorId: string | null;
+        bitacora: string | null;
+        latitude: number | null;
+        longitude: number | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
     findOne(id: string): Promise<{
-        items: ({
-            product: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                category: string;
-                sku: string;
-                image: string | null;
-            };
-        } & {
-            productId: string;
-            quantity: number;
-            id: string;
-            createdAt: Date;
-            inventoryItemId: string | null;
-            reportId: string;
-        })[];
-        photos: {
-            url: string;
-            type: import(".prisma/client").$Enums.PhotoType;
-            id: string;
-            createdAt: Date;
-            reportId: string;
-        }[];
-        operator: {
+        id: string;
+        code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
+        operatorId: string;
+        companionId: string | null;
+        conductorId: string | null;
+        bitacora: string | null;
+        latitude: number | null;
+        longitude: number | null;
+        createdAt: Date;
+        updatedAt: Date;
+    } & {
+        items: import(".prisma/client").ReportItem[];
+        photos: import(".prisma/client").Photo[];
+        operator?: {
             id: string;
             name: string;
             email: string;
         };
-        conductor: {
+        companion?: {
             id: string;
             name: string;
             email: string;
         } | null;
-        audits: ({
-            user: {
-                id: string;
-                name: string;
-            };
-        } & {
+        conductor?: {
             id: string;
-            timestamp: Date;
-            action: string;
-            entityType: string;
-            entityId: string;
-            details: Prisma.JsonValue | null;
-            reportId: string | null;
-            userId: string;
-        })[];
-    } & {
+            name: string;
+            email: string;
+        } | null;
+        audits: import(".prisma/client").AuditLog[];
+    }>;
+    update(id: string, dto: UpdateReportDto, userId: string, userRole: string): Promise<{
+        id: string;
         code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
         operatorId: string;
+        companionId: string | null;
         conductorId: string | null;
         bitacora: string | null;
         latitude: number | null;
         longitude: number | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateReportDto, userId: string): Promise<{
+    delete(id: string, userId: string, userRole: string): Promise<{
+        id: string;
         code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
         operatorId: string;
+        companionId: string | null;
         conductorId: string | null;
         bitacora: string | null;
         latitude: number | null;
         longitude: number | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -172,53 +132,45 @@ export declare class ReportsService {
         productId: string;
         quantity: number;
     }[], userId: string): Promise<{
-        items: {
-            productId: string;
-            quantity: number;
-            id: string;
-            createdAt: Date;
-            inventoryItemId: string | null;
-            reportId: string;
-        }[];
-    } & {
+        id: string;
         code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
         operatorId: string;
+        companionId: string | null;
         conductorId: string | null;
         bitacora: string | null;
         latitude: number | null;
         longitude: number | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
+    } & {
+        items: import(".prisma/client").ReportItem[];
     }>;
     findByCode(code: string): Promise<({
-        items: {
-            productId: string;
-            quantity: number;
-            id: string;
-            createdAt: Date;
-            inventoryItemId: string | null;
-            reportId: string;
-        }[];
-        photos: {
-            url: string;
-            type: import(".prisma/client").$Enums.PhotoType;
-            id: string;
-            createdAt: Date;
-            reportId: string;
-        }[];
-    } & {
+        id: string;
         code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
         operatorId: string;
+        companionId: string | null;
         conductorId: string | null;
         bitacora: string | null;
         latitude: number | null;
         longitude: number | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
+    } & {
+        items: import(".prisma/client").ReportItem[];
+        photos: import(".prisma/client").Photo[];
     }) | null>;
-    private createAuditLog;
+    listOperators(): Promise<{
+        id: string;
+        email: string;
+        name: string;
+        role: string;
+    }[]>;
+    canView(userId: string, userRole: string, report: any): boolean;
+    canEdit(userId: string, userRole: string, report: any): boolean;
+    canDelete(userId: string, userRole: string, report: any): boolean;
 }

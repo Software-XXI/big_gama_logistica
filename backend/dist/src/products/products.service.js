@@ -11,60 +11,41 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductsService = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma.service");
+const product_repository_1 = require("../common/providers/repositories/product.repository");
 let ProductsService = class ProductsService {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    productsRepo;
+    constructor(productsRepo) {
+        this.productsRepo = productsRepo;
     }
     async create(dto) {
-        return this.prisma.product.create({
-            data: dto,
-        });
+        return this.productsRepo.create(dto);
     }
     async createMany(products) {
-        return this.prisma.product.createMany({
-            data: products,
-            skipDuplicates: true,
-        });
+        return this.productsRepo.createMany(products);
     }
     async findAll(activeOnly = true) {
-        return this.prisma.product.findMany({
-            where: activeOnly ? { isActive: true } : undefined,
-            orderBy: { name: 'asc' },
-        });
+        return this.productsRepo.findAll(activeOnly);
     }
     async findOne(id) {
-        const product = await this.prisma.product.findUnique({
-            where: { id },
-            include: { items: true },
-        });
+        const product = await this.productsRepo.findOne(id);
         if (!product) {
             throw new common_1.NotFoundException(`Producto ${id} no encontrado`);
         }
         return product;
     }
     async findBySku(sku) {
-        return this.prisma.product.findUnique({
-            where: { sku },
-        });
+        return this.productsRepo.findBySku(sku);
     }
     async update(id, dto) {
-        return this.prisma.product.update({
-            where: { id },
-            data: dto,
-        });
+        return this.productsRepo.update(id, dto);
     }
     async deactivate(id) {
-        return this.prisma.product.update({
-            where: { id },
-            data: { isActive: false },
-        });
+        return this.productsRepo.deactivate(id);
     }
 };
 exports.ProductsService = ProductsService;
 exports.ProductsService = ProductsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [product_repository_1.ProductRepository])
 ], ProductsService);
 //# sourceMappingURL=products.service.js.map

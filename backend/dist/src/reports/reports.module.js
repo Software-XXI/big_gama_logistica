@@ -12,11 +12,13 @@ const reports_controller_1 = require("./reports.controller");
 const reports_export_controller_1 = require("./reports-export.controller");
 const reports_service_1 = require("./reports.service");
 const reports_export_service_1 = require("./reports-export.service");
+const repositories_module_1 = require("../common/providers/repositories.module");
 let ReportsModule = class ReportsModule {
 };
 exports.ReportsModule = ReportsModule;
 exports.ReportsModule = ReportsModule = __decorate([
     (0, common_1.Module)({
+        imports: [repositories_module_1.RepositoriesModule],
         controllers: [reports_controller_1.ReportsController, reports_export_controller_1.ReportsExportController],
         providers: [reports_service_1.ReportsService, reports_export_service_1.ReportsExportService],
         exports: [reports_service_1.ReportsService],

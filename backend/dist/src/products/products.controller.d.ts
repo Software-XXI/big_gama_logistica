@@ -4,72 +4,69 @@ export declare class ProductsController {
     private readonly productsService;
     constructor(productsService: ProductsService);
     create(dto: CreateProductDto): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         isActive: boolean;
         category: string;
         sku: string;
         image: string | null;
     }>;
-    createMany(products: CreateProductDto[]): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    createMany(products: CreateProductDto[]): Promise<{
+        count: number;
+    }>;
     findAll(active?: string): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         isActive: boolean;
         category: string;
         sku: string;
         image: string | null;
     }[]>;
     findBySku(sku: string): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         isActive: boolean;
         category: string;
         sku: string;
         image: string | null;
     } | null>;
     findOne(id: string): Promise<{
-        items: {
-            productId: string;
-            quantity: number;
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            location: string | null;
-            condition: import(".prisma/client").$Enums.ItemCondition | null;
-            notes: string | null;
-        }[];
-    } & {
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         isActive: boolean;
         category: string;
         sku: string;
         image: string | null;
+    } & {
+        items: {
+            id: string;
+            quantity: number;
+            location: string | null;
+        }[];
     }>;
     update(id: string, dto: UpdateProductDto): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         isActive: boolean;
         category: string;
         sku: string;
         image: string | null;
     }>;
     deactivate(id: string): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         isActive: boolean;
         category: string;
         sku: string;

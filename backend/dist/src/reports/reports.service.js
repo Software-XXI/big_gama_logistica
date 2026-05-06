@@ -11,133 +11,89 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportsService = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma.service");
-const client_1 = require("@prisma/client");
+const report_repository_1 = require("../common/providers/repositories/report.repository");
+const user_repository_1 = require("../common/providers/repositories/user.repository");
 let ReportsService = class ReportsService {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    reportsRepo;
+    userRepo;
+    constructor(reportsRepo, userRepo) {
+        this.reportsRepo = reportsRepo;
+        this.userRepo = userRepo;
     }
     async create(dto, userId) {
-        const report = await this.prisma.report.create({
-            data: {
-                code: dto.code,
-                operatorId: dto.operatorId || userId,
-                conductorId: dto.conductorId,
-                bitacora: dto.bitacora,
-                latitude: dto.latitude,
-                longitude: dto.longitude,
-                status: client_1.ReportStatus.SYNCED,
-                items: dto.items
-                    ? {
-                        create: dto.items.map((item) => ({
-                            productId: item.productId,
-                            quantity: item.quantity,
-                        })),
-                    }
-                    : undefined,
-            },
-            include: {
-                items: true,
-                operator: true,
-                conductor: true,
-            },
-        });
-        if (dto.photos?.length) {
-            await this.prisma.photo.createMany({
-                data: dto.photos.map((photo) => ({
-                    reportId: report.id,
-                    url: photo.url,
-                    type: photo.type || 'EVIDENCE',
-                })),
-            });
-        }
-        await this.createAuditLog(report.id, userId, 'CREATE_REPORT', report);
+        const report = await this.reportsRepo.create(dto);
+        await this.reportsRepo.createAuditLog(report.id, userId, 'CREATE_REPORT', report);
         return report;
     }
     async findAll(status) {
-        const where = status ? { status } : undefined;
-        return this.prisma.report.findMany({
-            where,
-            include: {
-                items: { include: { product: true } },
-                photos: true,
-                operator: { select: { id: true, name: true } },
-                conductor: { select: { id: true, name: true } },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        return this.reportsRepo.findAll(status);
+    }
+    async findAllForUser(userId) {
+        return this.reportsRepo.findAllForUser(userId);
     }
     async findOne(id) {
-        const report = await this.prisma.report.findUnique({
-            where: { id },
-            include: {
-                items: { include: { product: true } },
-                photos: true,
-                operator: { select: { id: true, name: true, email: true } },
-                conductor: { select: { id: true, name: true, email: true } },
-                audits: {
-                    include: { user: { select: { id: true, name: true } } },
-                    orderBy: { timestamp: 'desc' },
-                },
-            },
-        });
+        const report = await this.reportsRepo.findOne(id);
         if (!report) {
             throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
         }
         return report;
     }
-    async update(id, dto, userId) {
-        const report = await this.prisma.report.update({
-            where: { id },
-            data: {
-                status: dto.status,
-                bitacora: dto.bitacora,
-                latitude: dto.latitude,
-                longitude: dto.longitude,
-            },
-        });
-        await this.createAuditLog(id, userId, 'UPDATE_REPORT', report);
-        return report;
+    async update(id, dto, userId, userRole) {
+        const report = await this.reportsRepo.findOne(id);
+        if (!report) {
+            throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
+        }
+        if (!this.canEdit(userId, userRole, report)) {
+            throw new common_1.ForbiddenException('No tienes permiso para editar este reporte');
+        }
+        const updated = await this.reportsRepo.update(id, dto);
+        await this.reportsRepo.createAuditLog(id, userId, 'UPDATE_REPORT', updated);
+        return updated;
+    }
+    async delete(id, userId, userRole) {
+        const report = await this.reportsRepo.findOne(id);
+        if (!report) {
+            throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
+        }
+        if (!this.canDelete(userId, userRole, report)) {
+            throw new common_1.ForbiddenException('No tienes permiso para eliminar este reporte');
+        }
+        await this.reportsRepo.createAuditLog(id, userId, 'DELETE_REPORT', report);
+        return this.reportsRepo.update(id, { status: 'REJECTED' });
     }
     async addItems(id, items, userId) {
-        const report = await this.prisma.report.update({
-            where: { id },
-            data: {
-                items: {
-                    create: items.map((item) => ({
-                        productId: item.productId,
-                        quantity: item.quantity,
-                    })),
-                },
-            },
-            include: { items: true },
-        });
-        await this.createAuditLog(id, userId, 'ADD_ITEMS', { items });
+        const report = await this.reportsRepo.addItems(id, items);
+        await this.reportsRepo.createAuditLog(id, userId, 'ADD_ITEMS', { items });
         return report;
     }
     async findByCode(code) {
-        return this.prisma.report.findUnique({
-            where: { code },
-            include: { items: true, photos: true },
-        });
+        return this.reportsRepo.findByCode(code);
     }
-    async createAuditLog(reportId, userId, action, details) {
-        await this.prisma.auditLog.create({
-            data: {
-                reportId,
-                userId,
-                action,
-                entityType: 'Report',
-                entityId: reportId,
-                details: details,
-            },
-        });
+    async listOperators() {
+        return this.userRepo.findAllByRole('OPERATOR');
+    }
+    canView(userId, userRole, report) {
+        if (userRole === 'ADMIN')
+            return true;
+        return (report.operatorId === userId ||
+            report.companionId === userId ||
+            report.conductorId === userId);
+    }
+    canEdit(userId, userRole, report) {
+        if (userRole === 'ADMIN')
+            return true;
+        return report.operatorId === userId || report.companionId === userId;
+    }
+    canDelete(userId, userRole, report) {
+        if (userRole === 'ADMIN')
+            return true;
+        return report.operatorId === userId;
     }
 };
 exports.ReportsService = ReportsService;
 exports.ReportsService = ReportsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [report_repository_1.ReportRepository,
+        user_repository_1.UserRepository])
 ], ReportsService);
 //# sourceMappingURL=reports.service.js.map

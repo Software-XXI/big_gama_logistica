@@ -15,7 +15,9 @@ const class_transformer_1 = require("class-transformer");
 class SyncReportDto {
     id;
     code;
+    title;
     operatorId;
+    companionId;
     conductorId;
     bitacora;
     latitude;
@@ -33,9 +35,19 @@ __decorate([
     __metadata("design:type", String)
 ], SyncReportDto.prototype, "code", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SyncReportDto.prototype, "title", void 0);
+__decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SyncReportDto.prototype, "operatorId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SyncReportDto.prototype, "companionId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

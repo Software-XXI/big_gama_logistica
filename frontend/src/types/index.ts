@@ -9,6 +9,19 @@ export interface Product {
   updatedAt: Date;
 }
 
+export interface InventoryItem {
+  id: string;
+  productId: string;
+  product?: Product;
+  quantity: number;
+  location?: string;
+  condition?: 'NEW' | 'GOOD' | 'WORN' | 'DAMAGED';
+  notes?: string;
+  minStock?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ReportItem {
   id: string;
   reportId: string;
@@ -34,9 +47,12 @@ export type ReportStatus = 'DRAFT' | 'SYNCED' | 'PROCESSING' | 'COMPLETED' | 'RE
 export interface Report {
   id: string;
   code: string;
+  title?: string;
   status: ReportStatus;
   operatorId: string;
   operatorName?: string;
+  companionId?: string;
+  companionName?: string;
   conductorId?: string;
   conductorName?: string;
   bitacora?: string;
@@ -59,6 +75,13 @@ export interface SyncQueueItem {
 }
 
 export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'OPERATOR' | 'CONDUCTOR';
+}
+
+export interface Operator {
   id: string;
   email: string;
   name: string;

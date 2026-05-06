@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SyncController = void 0;
 const common_1 = require("@nestjs/common");
 const sync_service_1 = require("./sync.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let SyncController = class SyncController {
     syncService;
     constructor(syncService) {
@@ -43,6 +44,7 @@ __decorate([
 ], SyncController.prototype, "getPendingCount", null);
 exports.SyncController = SyncController = __decorate([
     (0, common_1.Controller)('sync'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [sync_service_1.SyncService])
 ], SyncController);
 //# sourceMappingURL=sync.controller.js.map
