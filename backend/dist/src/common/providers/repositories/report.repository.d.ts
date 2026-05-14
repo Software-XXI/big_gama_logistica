@@ -61,4 +61,10 @@ export declare class ReportRepository implements IReportRepository {
         items: ReportItem[];
     }>;
     syncUpdate(code: string, dto: SyncUpdateReportDto): Promise<Report>;
+    delete(id: string): Promise<void>;
+    findAllOperators(): Promise<{
+        id: string;
+        name: string;
+        email: string;
+    }[]>;
 }

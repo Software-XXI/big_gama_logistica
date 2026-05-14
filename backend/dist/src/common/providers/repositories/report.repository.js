@@ -180,6 +180,15 @@ let ReportRepository = class ReportRepository {
         }
         return existing;
     }
+    async delete(id) {
+        await this.prisma.report.delete({ where: { id } });
+    }
+    async findAllOperators() {
+        return this.prisma.user.findMany({
+            where: { role: 'OPERATOR' },
+            select: { id: true, name: true, email: true },
+        });
+    }
 };
 exports.ReportRepository = ReportRepository;
 exports.ReportRepository = ReportRepository = __decorate([

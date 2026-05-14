@@ -1,15 +1,9 @@
-import type { CreateReportDto, UpdateReportDto } from "../common/interfaces/repositories/i-report.repository";
 import { ReportRepository } from "../common/providers/repositories/report.repository";
-import { UserRepository } from "../common/providers/repositories/user.repository";
+import type { CreateReportDto, UpdateReportDto } from "../common/interfaces/repositories/i-report.repository";
 import { ReportStatus } from '@prisma/client';
-export interface UserInfo {
-    id: string;
-    role: string;
-}
 export declare class ReportsService {
     private reportsRepo;
-    private userRepo;
-    constructor(reportsRepo: ReportRepository, userRepo: UserRepository);
+    constructor(reportsRepo: ReportRepository);
     create(dto: CreateReportDto, userId: string): Promise<{
         id: string;
         code: string;
@@ -40,20 +34,6 @@ export declare class ReportsService {
         } | null;
     }>;
     findAll(status?: ReportStatus): Promise<{
-        id: string;
-        code: string;
-        title: string | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        operatorId: string;
-        companionId: string | null;
-        conductorId: string | null;
-        bitacora: string | null;
-        latitude: number | null;
-        longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }[]>;
-    findAllForUser(userId: string): Promise<{
         id: string;
         code: string;
         title: string | null;
@@ -100,34 +80,6 @@ export declare class ReportsService {
         } | null;
         audits: import(".prisma/client").AuditLog[];
     }>;
-    update(id: string, dto: UpdateReportDto, userId: string, userRole: string): Promise<{
-        id: string;
-        code: string;
-        title: string | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        operatorId: string;
-        companionId: string | null;
-        conductorId: string | null;
-        bitacora: string | null;
-        latitude: number | null;
-        longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
-    delete(id: string, userId: string, userRole: string): Promise<{
-        id: string;
-        code: string;
-        title: string | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        operatorId: string;
-        companionId: string | null;
-        conductorId: string | null;
-        bitacora: string | null;
-        latitude: number | null;
-        longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
     addItems(id: string, items: {
         productId: string;
         quantity: number;
@@ -164,13 +116,48 @@ export declare class ReportsService {
         items: import(".prisma/client").ReportItem[];
         photos: import(".prisma/client").Photo[];
     }) | null>;
+    findAllForUser(userId: string): Promise<{
+        id: string;
+        code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
+        operatorId: string;
+        companionId: string | null;
+        conductorId: string | null;
+        bitacora: string | null;
+        latitude: number | null;
+        longitude: number | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
     listOperators(): Promise<{
         id: string;
-        email: string;
         name: string;
-        role: string;
+        email: string;
     }[]>;
-    canView(userId: string, userRole: string, report: any): boolean;
-    canEdit(userId: string, userRole: string, report: any): boolean;
-    canDelete(userId: string, userRole: string, report: any): boolean;
+    canView(userId: string, role: string, report: {
+        operatorId: string;
+        companionId?: string | null;
+        conductorId?: string | null;
+    }): boolean;
+    canEdit(userId: string, role: string, report: {
+        operatorId: string;
+        companionId?: string | null;
+        conductorId?: string | null;
+    }): boolean;
+    delete(id: string, userId: string, role: string): Promise<void>;
+    update(id: string, dto: UpdateReportDto, userId: string, role: string): Promise<{
+        id: string;
+        code: string;
+        title: string | null;
+        status: import(".prisma/client").$Enums.ReportStatus;
+        operatorId: string;
+        companionId: string | null;
+        conductorId: string | null;
+        bitacora: string | null;
+        latitude: number | null;
+        longitude: number | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
 }

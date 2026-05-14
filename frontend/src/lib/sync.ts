@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
+import { apiFetch, getApiUrl } from '@/lib/api';
 import { getSyncQueue, updateSyncQueueItem, removeSyncQueueItem } from '@/repo/reports';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+const API_URL = getApiUrl();
 
 interface SyncResult {
   success: boolean;
@@ -70,30 +71,30 @@ async function syncReport(data: { id: string }) {
   if (!report) return;
 
   const items = await db.reportItems.where('reportId').equals(data.id).toArray();
-  
-  await fetch(`${API_URL}/reports/sync`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-    },
-    body: JSON.stringify({
-      id: report.id,
-      code: report.code,
-      status: 'SYNCED',
-      operatorId: report.operatorId,
-      conductorId: report.conductorId,
-      bitacora: report.bitacora,
-      latitude: report.latitude,
-      longitude: report.longitude,
-      items: items.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-      })),
-    }),
-  });
 
-  await db.reports.update(data.id, { status: 'SYNCED', syncedAt: new Date() });
+  try {
+    await apiFetch('/reports/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        id: report.id,
+        code: report.code,
+        status: 'SYNCED',
+        operatorId: report.operatorId,
+        conductorId: report.conductorId,
+        bitacora: report.bitacora,
+        latitude: report.latitude,
+        longitude: report.longitude,
+        items: items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      }),
+    });
+    await db.reports.update(data.id, { status: 'SYNCED', syncedAt: new Date() });
+  } catch (error) {
+    console.error('Sync report failed:', error);
+    throw error;
+  }
 }
 
 async function syncPhoto(data: { id: string; reportId: string }) {
@@ -113,7 +114,7 @@ async function syncPhoto(data: { id: string; reportId: string }) {
     const token = localStorage.getItem('token');
     const response = await fetch(`${API_URL}/photos/upload`, {
       method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
 
@@ -133,41 +134,36 @@ async function syncProduct(data: { id: string }) {
   const product = await db.products.get(data.id);
   if (!product) return;
 
-  const token = localStorage.getItem('token');
-  
-  const response = await fetch(`${API_URL}/products`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify({
-      name: product.name,
-      category: product.category,
-      sku: product.sku,
-      image: product.image,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Product sync failed: ${response.status}`);
+  try {
+    await apiFetch('/products', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: product.name,
+        category: product.category,
+        sku: product.sku,
+        image: product.image,
+      }),
+    });
+    console.log(`Product ${product.id} synced successfully`);
+  } catch (error) {
+    console.error('Sync product failed:', error);
+    throw error;
   }
-
-  console.log(`Product ${product.id} synced successfully`);
 }
 
 async function syncDeleteProduct(data: { id: string }) {
   const product = await db.products.get(data.id);
   if (!product) return;
 
-  const token = localStorage.getItem('token');
-  
-  await fetch(`${API_URL}/products/${data.id}/deactivate`, {
-    method: 'PATCH',
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-  });
-
-  console.log(`Product ${data.id} deactivated on backend`);
+  try {
+    await apiFetch(`/products/${data.id}/deactivate`, {
+      method: 'PATCH',
+    });
+    console.log(`Product ${data.id} deactivated on backend`);
+  } catch (error) {
+    console.error('Delete product failed:', error);
+    throw error;
+  }
 }
 
 function dataURItoBlob(dataURI: string): Blob {

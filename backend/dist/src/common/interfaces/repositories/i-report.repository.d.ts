@@ -100,4 +100,10 @@ export interface IReportRepository {
     } | null>;
     createAuditLog(reportId: string, userId: string, action: string, details: unknown): Promise<AuditLog>;
     syncUpdate(code: string, dto: SyncUpdateReportDto): Promise<Report>;
+    delete(id: string): Promise<void>;
+    findAllOperators(): Promise<{
+        id: string;
+        name: string;
+        email: string;
+    }[]>;
 }

@@ -48,9 +48,8 @@ export declare class ReportsController {
     }[]>;
     listOperators(): Promise<{
         id: string;
-        email: string;
         name: string;
-        role: string;
+        email: string;
     }[]>;
     findByCode(code: string, req: any): Promise<({
         id: string;
@@ -116,20 +115,7 @@ export declare class ReportsController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    delete(id: string, req: any): Promise<{
-        id: string;
-        code: string;
-        title: string | null;
-        status: import(".prisma/client").$Enums.ReportStatus;
-        operatorId: string;
-        companionId: string | null;
-        conductorId: string | null;
-        bitacora: string | null;
-        latitude: number | null;
-        longitude: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
+    delete(id: string, req: any): Promise<void>;
     addItems(id: string, items: {
         productId: string;
         quantity: number;

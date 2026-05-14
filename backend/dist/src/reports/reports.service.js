@@ -12,13 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportsService = void 0;
 const common_1 = require("@nestjs/common");
 const report_repository_1 = require("../common/providers/repositories/report.repository");
-const user_repository_1 = require("../common/providers/repositories/user.repository");
 let ReportsService = class ReportsService {
     reportsRepo;
-    userRepo;
-    constructor(reportsRepo, userRepo) {
+    constructor(reportsRepo) {
         this.reportsRepo = reportsRepo;
-        this.userRepo = userRepo;
     }
     async create(dto, userId) {
         const report = await this.reportsRepo.create(dto);
@@ -28,38 +25,12 @@ let ReportsService = class ReportsService {
     async findAll(status) {
         return this.reportsRepo.findAll(status);
     }
-    async findAllForUser(userId) {
-        return this.reportsRepo.findAllForUser(userId);
-    }
     async findOne(id) {
         const report = await this.reportsRepo.findOne(id);
         if (!report) {
             throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
         }
         return report;
-    }
-    async update(id, dto, userId, userRole) {
-        const report = await this.reportsRepo.findOne(id);
-        if (!report) {
-            throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
-        }
-        if (!this.canEdit(userId, userRole, report)) {
-            throw new common_1.ForbiddenException('No tienes permiso para editar este reporte');
-        }
-        const updated = await this.reportsRepo.update(id, dto);
-        await this.reportsRepo.createAuditLog(id, userId, 'UPDATE_REPORT', updated);
-        return updated;
-    }
-    async delete(id, userId, userRole) {
-        const report = await this.reportsRepo.findOne(id);
-        if (!report) {
-            throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
-        }
-        if (!this.canDelete(userId, userRole, report)) {
-            throw new common_1.ForbiddenException('No tienes permiso para eliminar este reporte');
-        }
-        await this.reportsRepo.createAuditLog(id, userId, 'DELETE_REPORT', report);
-        return this.reportsRepo.update(id, { status: 'REJECTED' });
     }
     async addItems(id, items, userId) {
         const report = await this.reportsRepo.addItems(id, items);
@@ -69,31 +40,61 @@ let ReportsService = class ReportsService {
     async findByCode(code) {
         return this.reportsRepo.findByCode(code);
     }
+    async findAllForUser(userId) {
+        return this.reportsRepo.findAllForUser(userId);
+    }
     async listOperators() {
-        return this.userRepo.findAllByRole('OPERATOR');
+        return this.reportsRepo.findAllOperators();
     }
-    canView(userId, userRole, report) {
-        if (userRole === 'ADMIN')
+    canView(userId, role, report) {
+        if (role === 'ADMIN' || role === 'SUPER_ADMIN')
             return true;
-        return (report.operatorId === userId ||
-            report.companionId === userId ||
-            report.conductorId === userId);
+        if (report.operatorId === userId)
+            return true;
+        if (report.companionId === userId)
+            return true;
+        if (report.conductorId === userId)
+            return true;
+        return false;
     }
-    canEdit(userId, userRole, report) {
-        if (userRole === 'ADMIN')
+    canEdit(userId, role, report) {
+        if (role === 'ADMIN' || role === 'SUPER_ADMIN')
             return true;
-        return report.operatorId === userId || report.companionId === userId;
+        if (report.operatorId === userId)
+            return true;
+        if (report.companionId === userId)
+            return true;
+        if (report.conductorId === userId)
+            return true;
+        return false;
     }
-    canDelete(userId, userRole, report) {
-        if (userRole === 'ADMIN')
-            return true;
-        return report.operatorId === userId;
+    async delete(id, userId, role) {
+        const report = await this.reportsRepo.findOne(id);
+        if (!report) {
+            throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
+        }
+        if (!this.canEdit(userId, role, report)) {
+            throw new common_1.ForbiddenException('No tienes permiso para eliminar este reporte');
+        }
+        await this.reportsRepo.delete(id);
+        await this.reportsRepo.createAuditLog(id, userId, 'DELETE_REPORT', { id });
+    }
+    async update(id, dto, userId, role) {
+        const report = await this.reportsRepo.findOne(id);
+        if (!report) {
+            throw new common_1.NotFoundException(`Reporte ${id} no encontrado`);
+        }
+        if (!this.canEdit(userId, role, report)) {
+            throw new common_1.ForbiddenException('No tienes permiso para editar este reporte');
+        }
+        const updated = await this.reportsRepo.update(id, dto);
+        await this.reportsRepo.createAuditLog(id, userId, 'UPDATE_REPORT', updated);
+        return updated;
     }
 };
 exports.ReportsService = ReportsService;
 exports.ReportsService = ReportsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [report_repository_1.ReportRepository,
-        user_repository_1.UserRepository])
+    __metadata("design:paramtypes", [report_repository_1.ReportRepository])
 ], ReportsService);
 //# sourceMappingURL=reports.service.js.map

@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { TabBar } from '@/components/TabBar';
 import { InventoryItem } from '@/components/InventoryItem';
 import { InventoryModal } from '@/components/InventoryModal';
-import { 
-  getAllInventoryItems, 
-  addInventoryItem, 
-  updateInventoryItem, 
+import {
+  getAllInventoryItems,
+  addInventoryItem,
+  updateInventoryItem,
   deleteInventoryItem,
   getInventoryStats
 } from '@/repo/inventory';
@@ -26,6 +26,7 @@ export default function InventoryPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ProductWithStock | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     loadItems();
     clearFailedSyncItems();

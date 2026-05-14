@@ -184,4 +184,15 @@ export class ReportRepository implements IReportRepository {
 
     return existing;
   }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.report.delete({ where: { id } });
+  }
+
+  async findAllOperators(): Promise<{ id: string; name: string; email: string }[]> {
+    return this.prisma.user.findMany({
+      where: { role: 'OPERATOR' },
+      select: { id: true, name: true, email: true },
+    });
+  }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ProductSelector } from '@/components/ProductSelector';
 import { Camera } from '@/components/Camera';
@@ -16,7 +16,7 @@ interface ReportWithFields extends Report {
   conductorName?: string;
 }
 
-export default function EditReportPage() {
+function EditReportContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -271,5 +271,13 @@ export default function EditReportPage() {
         </button>
       </div>
     </main>
+  );
+}
+
+export default function EditReportPage() {
+  return (
+    <Suspense fallback={<main className="container"><p>Cargando...</p></main>}>
+      <EditReportContent />
+    </Suspense>
   );
 }

@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { TabBar } from '@/components/TabBar';
 import { getReport, getPhotos, updateReport, deleteReport } from '@/repo/reports';
 import type { Report, Photo } from '@/types';
 
-export default function ReportDetailsPage() {
+function ReportDetailsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const id = searchParams.get('id');
@@ -140,5 +140,13 @@ export default function ReportDetailsPage() {
 
       <TabBar />
     </main>
+  );
+}
+
+export default function ReportDetailsPage() {
+  return (
+    <Suspense fallback={<main className="container"><p>Cargando...</p></main>}>
+      <ReportDetailsContent />
+    </Suspense>
   );
 }

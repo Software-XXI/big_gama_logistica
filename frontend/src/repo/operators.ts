@@ -1,24 +1,13 @@
+import { apiFetch } from '@/lib/api';
 import type { Operator } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 export async function getOperators(): Promise<Operator[]> {
-  const token = localStorage.getItem('token');
-  
-  const response = await fetch(`${API_URL}/reports/operators`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    console.error('Failed to fetch operators:', response.status);
+  try {
+    return await apiFetch<Operator[]>('/reports/operators');
+  } catch (error) {
+    console.error('Failed to fetch operators:', error);
     return [];
   }
-
-  return response.json();
 }
 
 export async function getOperatorsCached(): Promise<Operator[]> {
